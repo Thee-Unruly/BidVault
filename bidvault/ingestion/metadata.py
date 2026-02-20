@@ -174,6 +174,22 @@ DONOR_KEYWORDS = {
 }
 
 
+def auto_tag_source_type(text: str) -> str:
+    """Infer source_type from document text."""
+    text_lower = text.lower()
+    
+    if any(kw in text_lower for kw in ["proposal", "bid", "tender response", "bidding document"]):
+        return SourceType.PROPOSAL
+    if any(kw in text_lower for kw in ["rfp", "request for proposal", "invitation to tender", "tender notice"]):
+        return SourceType.RFP
+    if any(kw in text_lower for kw in ["curriculum vitae", "resume", "personal profile", "years of experience"]):
+        return SourceType.CV
+    if any(kw in text_lower for kw in ["act", "gazette", "chapter", "law of kenya"]):
+        return SourceType.OTHER # or add LEGAL to SourceType
+    
+    return SourceType.OTHER
+
+
 def auto_tag_sector(text: str) -> str:
     """Infer sector from document text using keyword matching."""
     text_lower = text.lower()
@@ -196,12 +212,40 @@ def auto_tag_donor(text: str) -> str:
     return Donor.OTHER
 
 
+def extract_year(text: str) -> int:
+    """Find the most likely year in the first few pages."""
+    import re
+    import datetime
+    
+    # Look for 4-digit years between 1990 and current year + 1
+    current_year = datetime.datetime.now().year
+    years = re.findall(r"\b(19\d{2}|20\d{2})\b", text[:5000])
+    
+    if not years:
+        return current_year
+        
+    # Count occurrences and return the most common one that is reasonable
+    from collections import Counter
+    year_counts = Counter([int(y) for y in years if 1990 <= int(y) <= current_year + 1])
+    
+    if not year_counts:
+        return current_year
+        
+    return year_counts.most_common(1)[0][0]
+
+
 def enrich_metadata(meta: DocumentMetadata, text: str) -> DocumentMetadata:
     """
     Auto-fill missing metadata fields by analysing the document text.
     Call this after creating a metadata object if the user hasn't
-    provided sector/donor manually.
+    provided fields manually.
     """
+    if not meta.source_type or meta.source_type == "other":
+        meta.source_type = auto_tag_source_type(text)
+
+    if not meta.year or meta.year == 0:
+        meta.year = extract_year(text)
+
     if meta.sector == "general" or not meta.sector:
         meta.sector = auto_tag_sector(text)
 

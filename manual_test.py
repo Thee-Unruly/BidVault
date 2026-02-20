@@ -29,15 +29,9 @@ def run_manual_test():
     # Path to your Data Protection Act PDF
     sample_path = r"C:\Users\ibrahim.fadhili\Downloads\Document Ingestion Pipeline\Data Protection Act.pdf"
     
-    # Create an ingestion request
+    # DYNAMIC REQUEST: The code will now infer the rest!
     request = IngestionRequest(
-        file_path=sample_path,
-        source_type="legal_act",
-        sector="governance",
-        donor="gok",
-        year=2019,
-        client="Government of Kenya",
-        won=None
+        file_path=sample_path
     )
     
     print(f"📄 Ingesting file: {sample_path}")
