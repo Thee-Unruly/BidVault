@@ -1,0 +1,41 @@
+# BidVault Ingestion Pipeline
+# pip install -r requirements.txt
+
+# ── Core extraction ─────────────────────────────────
+pdfplumber==0.11.4          # Digital PDF text extraction
+pdf2image==1.17.0           # Convert PDF pages to images (for OCR)
+pytesseract==0.3.13         # OCR wrapper for Tesseract
+Pillow==10.4.0              # Image processing (required by pdf2image)
+python-docx==1.1.2          # Word document extraction
+
+# ── Chunking & embeddings ────────────────────────────
+langchain-text-splitters==0.3.2   # Fallback text splitter
+openai==1.51.0              # Azure OpenAI + OpenAI SDK (same package)
+
+# ── Vector store ─────────────────────────────────────
+psycopg2-binary==2.9.9      # PostgreSQL driver
+pgvector==0.3.5             # pgvector Python client
+
+# ── Web / API ─────────────────────────────────────────
+fastapi==0.115.0
+uvicorn==0.30.6
+python-multipart==0.0.12    # File uploads in FastAPI
+
+# ── Scheduling (for sync jobs) ────────────────────────
+apscheduler==3.10.4
+
+# ── Utils ─────────────────────────────────────────────
+python-dotenv==1.0.1        # Load .env file
+pydantic==2.9.2             # Data validation
+
+# ── System dependencies (install separately) ──────────
+# Ubuntu/Debian:
+#   sudo apt install tesseract-ocr poppler-utils
+#   sudo apt install tesseract-ocr-swa   # for Swahili OCR
+#
+# macOS:
+#   brew install tesseract poppler
+#
+# Windows:
+#   https://github.com/UB-Mannheim/tesseract/wiki
+#   https://github.com/oschwartz10612/poppler-windows
