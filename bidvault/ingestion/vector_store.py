@@ -277,20 +277,21 @@ class VectorStore:
         # pgvector cosine similarity: 1 - (embedding <=> query)
         # <=> is the cosine distance operator
         query = f"""
-            SELECT
-                id,
-                text,
-                metadata,
-                1 - (embedding <=> %s::vector) AS similarity
-            FROM document_chunks
-            {where_clause}
-            HAVING 1 - (embedding <=> %s::vector) >= %s
-            ORDER BY embedding <=> %s::vector
+            SELECT * FROM (
+                SELECT
+                    id,
+                    text,
+                    metadata,
+                    1 - (embedding <=> %s::vector) AS similarity
+                FROM document_chunks
+                {where_clause}
+            ) AS subquery
+            WHERE similarity >= %s
+            ORDER BY similarity DESC
             LIMIT %s
         """
 
-        # Note: query_embedding appears 3 times in the query
-        all_params = [query_embedding] + params + [query_embedding, min_similarity, query_embedding, top_k]
+        all_params = [query_embedding] + params + [min_similarity, top_k]
 
         with conn.cursor() as cur:
             cur.execute(query, all_params)

@@ -168,6 +168,7 @@ class IngestionPipeline:
             donor                = request.donor,
             year                 = year,
             document_id          = request.document_id,
+            file_name            = os.path.basename(request.file_path),
             client               = request.client,
             country              = request.country,
             won                  = request.won,
