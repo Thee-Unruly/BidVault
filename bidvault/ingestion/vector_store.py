@@ -28,7 +28,9 @@ from typing import Optional
 from .metadata import DocumentMetadata
 
 
-EMBEDDING_DIMENSIONS = 3072  # text-embedding-3-large
+# Default to 384 for local fastembed (bge-small-en-v1.5)
+# If using Azure text-embedding-3-large, you would use 3072
+EMBEDDING_DIMENSIONS = 384  
 
 
 # ── SCHEMA ────────────────────────────────────────────────────────────────────
@@ -41,7 +43,7 @@ CREATE TABLE IF NOT EXISTS document_chunks (
     document_id     UUID,                           -- FK to documents table
     chunk_index     INTEGER NOT NULL,
     text            TEXT NOT NULL,
-    embedding       vector(3072),                   -- pgvector column
+    embedding       vector(384),                   -- matching local model
     metadata        JSONB,                          -- all metadata fields
     source_type     VARCHAR(50),                    -- denormalised for fast filtering
     sector          VARCHAR(50),

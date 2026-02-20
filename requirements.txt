@@ -10,7 +10,8 @@ python-docx==1.1.2          # Word document extraction
 
 # ── Chunking & embeddings ────────────────────────────
 langchain-text-splitters==0.3.2   # Fallback text splitter
-openai==1.51.0              # Azure OpenAI + OpenAI SDK (same package)
+openai==1.51.0              # Azure OpenAI + OpenAI SDK
+fastembed==0.4.1            # Local offline embeddings (Free)
 
 # ── Vector store ─────────────────────────────────────
 psycopg2-binary==2.9.9      # PostgreSQL driver
