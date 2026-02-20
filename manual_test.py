@@ -26,18 +26,18 @@ def run_manual_test():
         dry_run=False # We want to see it actually embed!
     )
     
-    # Absolute path to the sample file
-    sample_path = os.path.join(os.getcwd(), "sample_proposal.txt")
+    # Path to your Data Protection Act PDF
+    sample_path = r"C:\Users\ibrahim.fadhili\Downloads\Document Ingestion Pipeline\Data Protection Act.pdf"
     
     # Create an ingestion request
     request = IngestionRequest(
         file_path=sample_path,
-        source_type="proposal",
-        sector="health",
-        donor="usaid",
-        year=2023,
-        client="Ministry of Health Kenya",
-        won=True
+        source_type="legal_act",
+        sector="governance",
+        donor="gok",
+        year=2019,
+        client="Government of Kenya",
+        won=None
     )
     
     print(f"📄 Ingesting file: {sample_path}")
