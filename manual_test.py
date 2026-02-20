@@ -6,24 +6,20 @@ sys.path.append(os.getcwd())
 
 # We mock ONLY the database layer. 
 # The Embedder will now be REAL and run locally on your machine.
-class MockVectorStore:
-    def store_chunks_batch(self, items): return len(items)
-
 from bidvault.ingestion.pipeline import IngestionPipeline, IngestionRequest
+from bidvault.ingestion.vector_store import VectorStore
 
 def run_manual_test():
     print("🚀 Starting Manual Ingestion Test (Local Offline Mode)")
-    print("💡 Note: The first run will download a small model (~100MB).\n")
+    print("💡 Saving to real Postgres database...\n")
     
     # Setting this to 'local' explicitly for the test
     os.environ["EMBEDDING_PROVIDER"] = "local"
     
-    # Initialize the pipeline
-    # VectorStore is mocked to avoid needing Postgres
-    # Embedder is REAL
+    # Initialize the pipeline with REAL VectorStore
     pipeline = IngestionPipeline(
-        vector_store=MockVectorStore(),
-        dry_run=False # We want to see it actually embed!
+        vector_store=VectorStore(),
+        dry_run=False
     )
     
     # Path to your Data Protection Act PDF

@@ -1,0 +1,16 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16  # Fixed the tag
+    container_name: bidvault_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: bidmaster
+      POSTGRES_PASSWORD: Phadhylly20
+      POSTGRES_DB: bidvault
+    ports:
+      - "4040:5432"  # Maps host port 4040 to container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
