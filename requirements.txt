@@ -28,6 +28,7 @@ apscheduler==3.10.4
 # ── Utils ─────────────────────────────────────────────
 python-dotenv==1.0.1        # Load .env file
 pydantic==2.9.2             # Data validation
+groq==0.11.0                # Groq Cloud API SDK
 
 # ── System dependencies (install separately) ──────────
 # Ubuntu/Debian:
