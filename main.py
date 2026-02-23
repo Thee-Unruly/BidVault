@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from bidvault.api.ingest import router as ingest_router
+from bidvault.api.intake import router as intake_router
 import uvicorn
 from dotenv import load_dotenv
 
@@ -13,6 +14,9 @@ app = FastAPI(
 
 # Include the ingestion router
 app.include_router(ingest_router, prefix="/api/ingest", tags=["ingestion"])
+
+# Include the intake (RFP analysis) router
+app.include_router(intake_router, prefix="/api/intake", tags=["intake"])
 
 @app.get("/")
 async def root():
