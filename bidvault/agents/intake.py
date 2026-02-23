@@ -42,6 +42,8 @@ class IntakeAgent:
         self.model = "llama-3.3-70b-versatile" # Powerful model for extraction
 
     def extract_brief(self, text: str) -> RFPBrief:
+        # Step 0: Clean the text of weird characters/null bytes that break LLMs
+        text = "".join(char for char in text if char.isprintable() or char in "\n\r\t")
         """
         Uses LLM to extract structured RFPBrief from raw text.
         We typically only need the first 20-30 pages of an RFP to find these details.
@@ -50,15 +52,30 @@ class IntakeAgent:
         
         # System prompt to enforce structure
         system_prompt = (
-            "You are a Senior Bid Manager. Your task is to analyze the provided RFP text "
-            "and extract a structured Bid Brief. Focus on administrative requirements, "
-            "evaluation criteria, and deadlines. If a field is not found, leave it empty or null. "
-            "Return the result strictly as a JSON object matching the requested schema."
+            "You are an expert Bid Strategy Analyst. Your task is to extract a highly accurate "
+            "Bid Brief from the provided RFP/Terms of Reference text. \n\n"
+            "CRITICAL INSTRUCTIONS:\n"
+            "1. PROJECT NAME: Look for the title on the cover page or first paragraph. It usually follows 'Terms of Reference for...' or 'Provision of...'.\n"
+            "2. CLIENT: Identify the organization issuing the bid (e.g., GIPF, Kenya Railways).\n"
+            "3. DEADLINE: Look for 'Closing Date', 'Submission Deadline', or 'Submission Date'. Be precise.\n"
+            "4. EVALUATION CRITERIA: Search for sections titled 'Evaluation', 'Selection Criteria', or 'Award Criteria'. Capture the categories and their weights/points.\n"
+            "5. MANDATORY DOCUMENTS: Identify required administrative docs (e.g., Tax certificates, IDs, experience proof).\n\n"
+            "Return strictly a JSON object using these exact keys:\n"
+            "- project_name\n"
+            "- client\n"
+            "- reference_number\n"
+            "- deadline\n"
+            "- summary\n"
+            "- evaluation_criteria (list of {criterion: str, weight: str})\n"
+            "- mandatory_documents (list of {document_name: str, description: str})\n"
+            "- technical_threshold\n"
+            "- contact_person\n"
+            "- submission_method\n"
         )
         
-        # Truncate text to fit context window (RFPs can be long)
-        # 15,000 characters is usually enough for the intro/instructions sections
-        context_text = text[:20000] 
+        # Increase context window — some RFPs have 20 pages of boilerplate before the meat.
+        # 40,000 chars is roughly 60+ pages of text.
+        context_text = text[:40000] 
 
         try:
             chat_completion = self.client.chat.completions.create(
