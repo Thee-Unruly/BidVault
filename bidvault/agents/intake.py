@@ -20,10 +20,10 @@ class RFPBrief(BaseModel):
     
     evaluation_criteria: List[EvaluationCriterion] = Field(default_factory=list, description="List of how the bid will be scored")
     mandatory_documents: List[MandatoryDocument] = Field(default_factory=list, description="List of administrative/technical documents that MUST be submitted")
-    technical_threshold: Optional[str] = Field(description="The minimum technical score required to pass to financial evaluation")
+    technical_threshold: Optional[str] = Field(default=None, description="The minimum technical score required to pass to financial evaluation")
     
-    contact_person: Optional[str] = Field(description="Point of contact for inquiries")
-    submission_method: Optional[str] = Field(description="How to submit (e.g., 'Via Portal', 'Physical Copy', 'Email')")
+    contact_person: Optional[str] = Field(default=None, description="Point of contact for inquiries")
+    submission_method: Optional[str] = Field(default=None, description="How to submit (e.g., 'Via Portal', 'Physical Copy', 'Email')")
 
 class IntakeAgent:
     """

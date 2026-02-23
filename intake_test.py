@@ -14,7 +14,7 @@ def test_intake():
     
     # Path to a document (using the Data Protection Act as a test case)
     # In a real scenario, this would be a new RFP PDF
-    file_path = "sample_rfp.txt"
+    file_path = r"C:\Users\ibrahim.fadhili\Downloads\Document Ingestion Pipeline\TOR-BID-NCS-RFP-GIPF-01-2025_IMPLEMENTATION-OF-GIPF-FILE-PLAN 2.pdf"
     
     if not os.path.exists(file_path):
         print(f"File not found: {file_path}")
