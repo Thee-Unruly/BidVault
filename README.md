@@ -1,66 +1,72 @@
-# Document Ingestion Pipeline
+# BidVault - Document Ingestion & Bid Agent Pipeline
 
-This pipeline is designed to ingest local and SharePoint documents (PDFs, Word docs, Scans), extract their text, split them into sections, and store them in a vector database for semantic search.
+BidVault is a powerful, AI-driven proposal automation system. It manages the entire lifecycle of a bid, from ingesting historical win data to analyzing new RFPs and drafting winning responses.
 
-## project Structure
+## Project Structure
 
 ```
 .
-├── bidvault/
-│   ├── __init__.py
-│   ├── api/
-│   │   ├── __init__.py
-│   │   └── ingest.py          # FastAPI endpoints for ingestion & search
-│   └── ingestion/
-│       ├── __init__.py
-│       ├── chunker.py         # Structure-aware document splitting
-│       ├── detector.py        # File type & OCR requirement detection
-│       ├── embedder.py        # Azure OpenAI embedding integration
-│       ├── extractor.py       # Multi-format text extraction (PDF, DOCX, OCR)
-│       ├── metadata.py        # Metadata schema & auto-tagging logic
-│       ├── pipeline.py        # Main orchestrator (The "Brain")
-│       ├── sharepoint.py      # SharePoint / MS Graph API connector
-│       └── vector_store.py    # pgvector / PostgreSQL interface
-├── .env                       # Environment variables (Azure, Postgres)
-├── requirements.txt           # Python dependencies
-└── main.py                    # App entry point
+├── bidvault/              # Core Logic
+│   ├── agents/            # AI Agents (Intake, Drafting, Review)
+│   ├── api/               # FastAPI Endpoints
+│   └── ingestion/         # Document Processing Pipeline
+├── data/                  # Sample RFPs and Proposals (for testing)
+├── tests/                 # Test Suites (Ingestion, Search, Agents)
+├── scripts/               # Utility & CLI scripts
+├── .env                   # Environment variables
+├── requirements.txt       # Python dependencies
+├── main.py                # App entry point
+└── docker-compose.yml     # Infrastructure (Postgres + pgvector)
 ```
 
-## How It Works (Communication Flow)
+## How It Works
 
-1.  **Ingestion Request**: A call is made to the `/api/ingest/upload` (FastAPI) or triggered via `sharepoint.py`.
-2.  **Orchestration (`pipeline.py`)**: The `IngestionPipeline` receives the file and initiates the 5-step process.
-3.  **Step 1: Detection (`detector.py`)**: Inspects the file to see if it's a digital PDF, a Word doc, or a scan that requires OCR.
-4.  **Step 2: Extraction (`extractor.py`)**: Uses `PyMuPDF`, `python-docx`, or `Tesseract OCR` to extract raw text while preserving section markers where possible.
-5.  **Step 3: Chunking (`chunker.py`)**: Splits the long text into logical chunks (approx. 500-1000 tokens) based on headers or paragraphs.
-6.  **Step 4: Tagging (`metadata.py`)**: Attaches metadata like `sector`, `donor`, `won/lost`, and `year`. It scans text for keywords to auto-fill missing tags.
-7.  **Step 5: Embedding & Storage (`embedder.py` & `vector_store.py`)**:
-    *   `embedder.py` sends text chunks to Azure OpenAI to get vector representations.
-    *   `vector_store.py` saves the text, metadata, and vectors into the `document_chunks` table in PostgreSQL.
+### 1. Ingestion Pipeline
+Orchestrates: **Detect → Extract → Chunk → Embed → Store**.
+*   **Detection**: Identifies file type and OCR needs.
+*   **Extraction**: Handles PDF, DOCX, and Scanned images (OCR).
+*   **Chunking**: Splits text into semantic sections using headers.
+*   **Embedding**: Uses FastEmbed (local) or Azure OpenAI for vectorisation.
+*   **Storage**: Hybrid storage using PostgreSQL for metadata and **pgvector** for vectors.
+
+### 2. Intake Agent
+The "Eyes" of the system.
+*   Analyzes new RFPs to extract structured **Bid Briefs**.
+*   Identifies deadlines, evaluation criteria, mandatory documents, and eligibility requirements.
+*   Provides a go/no-go summary for bid managers.
+
+### 3. Drafting Agent (Next)
+The "Writer" of the system.
+*   Combines the **Bid Brief** with historical context from the **Vector Store**.
+*   Generates initial drafts for technical methodologies, executive summaries, and company profiles.
 
 ## Getting Started
 
 ### 1. Setup Environment
-Copy `.env.example` to `.env` and fill in your credentials.
+Copy `.env.example` to `.env` and fill in your credentials (including `GROQ_API_KEY`).
 
 ### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Initialize Database
+### 3. Run Infrastructure
 ```bash
-python -c "from bidvault.ingestion.vector_store import VectorStore; VectorStore().create_table()"
+docker-compose up -d
 ```
 
-### 4. Run the API
+### 4. Running Tests
 ```bash
-uvicorn bidvault.api.ingest:app --reload
+# Test the Ingestion Pipeline
+python tests/test_ingest.py
+
+# Test the Intake Agent (RFP Analysis)
+python tests/test_intake.py
 ```
-*(Note: You'll need a main.py that imports the router, or run uvicorn pointing to the router file if it's configured as a standalone app.)*
 
 ## Key Tools Used
-*   **Extraction**: PyMuPDF, pdfplumber, pytesseract (OCR)
-*   **Pipeline**: LangChain (for chunking logic)
+*   **LLM**: Llama-3 (via Groq)
+*   **Embeddings**: FastEmbed (Default) or Azure OpenAI
+*   **OCR**: Tesseract + Poppler
 *   **Vectors**: pgvector (PostgreSQL extension)
-*   **AI**: Azure OpenAI (text-embedding-3-large)
+*   **API**: FastAPI

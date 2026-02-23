@@ -3,9 +3,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Data and PDFs
 *.pdf
 *.txt
-!sample_proposal.txt
+!data/
 !README.md
+
 .docker/
 docker-compose.override.yml

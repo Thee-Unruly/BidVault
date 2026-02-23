@@ -6,6 +6,12 @@ Demonstrates how to differentiate documents and perform semantic search.
 
 import os
 import sys
+
+# Resolve project root so bidvault package is importable regardless of CWD
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 from bidvault.ingestion.vector_store import VectorStore, SearchFilters
 from bidvault.ingestion.embedder import Embedder
 

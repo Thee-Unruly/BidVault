@@ -2,7 +2,10 @@ import os
 import sys
 from dotenv import load_dotenv
 
-sys.path.append(os.getcwd())
+# Resolve project root so bidvault package is importable regardless of CWD
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
 from bidvault.ingestion.extractor import extract
 from bidvault.ingestion.detector  import detect
@@ -11,7 +14,7 @@ from bidvault.agents.intake       import IntakeAgent
 def test_intake():
     load_dotenv()
 
-    file_path = r"C:\Users\ibrahim.fadhili\Downloads\Document Ingestion Pipeline\TOR-BID-NCS-RFP-GIPF-01-2025_IMPLEMENTATION-OF-GIPF-FILE-PLAN 2.pdf"
+    file_path = os.path.join(ROOT, "data", "TOR-BID-NCS-RFP-GIPF-01-2025_IMPLEMENTATION-OF-GIPF-FILE-PLAN 2.pdf")
 
     if not os.path.exists(file_path):
         print(f"File not found: {file_path}")

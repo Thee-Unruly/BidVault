@@ -1,8 +1,10 @@
 import os
 import sys
 
-# Add the current directory to sys.path so we can import the bidvault package
-sys.path.append(os.getcwd())
+# Resolve project root so bidvault package is importable regardless of CWD
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
 
 # We mock ONLY the database layer. 
 # The Embedder will now be REAL and run locally on your machine.
@@ -23,7 +25,7 @@ def run_manual_test():
     )
     
     # Path to your Data Protection Act PDF
-    sample_path = r"C:\Users\ibrahim.fadhili\Downloads\Document Ingestion Pipeline\Data Protection Act.pdf"
+    sample_path = os.path.join(ROOT, "data", "Data Protection Act.pdf")
     
     # DYNAMIC REQUEST: The code will now infer the rest!
     request = IngestionRequest(
