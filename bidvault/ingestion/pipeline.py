@@ -160,13 +160,12 @@ class IngestionPipeline:
 
         # ── STEP 4: BUILD METADATA ────────────────────────────────────────────
         print(f"[4/5] Building metadata...")
-        year = request.year or _current_year()
-
+        
         base_metadata = DocumentMetadata(
             source_type          = request.source_type,
             sector               = request.sector,
             donor                = request.donor,
-            year                 = year,
+            year                 = request.year, # Pass 0 if unknown to allow auto-extraction
             document_id          = request.document_id,
             file_name            = os.path.basename(request.file_path),
             client               = request.client,

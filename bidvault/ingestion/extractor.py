@@ -13,6 +13,7 @@ Extraction hierarchy:
 """
 
 import re
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -96,28 +97,31 @@ def _extract_scanned_pdf(file_path: str) -> ExtractionResult:
     """
     Convert each page to an image then run Tesseract OCR.
     Requires: pdf2image, pytesseract, Tesseract binary installed.
-
-    Install Tesseract on Ubuntu: sudo apt install tesseract-ocr
-    Install Tesseract on Mac:    brew install tesseract
     """
     try:
         from pdf2image import convert_from_path
         import pytesseract
     except ImportError:
-        raise ImportError("Run: pip install pdf2image pytesseract  &&  sudo apt install tesseract-ocr poppler-utils")
+        raise ImportError("Run: pip install pdf2image pytesseract && sudo apt install tesseract-ocr poppler-utils")
 
-    pages   = []
+    # Configure Tesseract path if provided in .env
+    tesseract_cmd = os.getenv("TESSERACT_CMD")
+    if tesseract_cmd:
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+
+    # Configure Poppler path if provided in .env
+    poppler_path = os.getenv("POPPLER_PATH")
+
+    pages = []
     warnings = []
 
     # DPI 300 is the sweet spot: good OCR quality without huge memory use
-    images = convert_from_path(file_path, dpi=300)
+    images = convert_from_path(file_path, dpi=300, poppler_path=poppler_path)
 
     for i, image in enumerate(images):
-        # lang='eng' — add 'swa' for Swahili if tesseract-ocr-swa is installed
         text = pytesseract.image_to_string(image, lang="eng", config="--psm 3")
         pages.append(clean_text(text))
 
-        # Warn if OCR returned very little text — may indicate poor scan quality
         if len(pages[-1].strip()) < 50:
             warnings.append(f"Page {i+1}: OCR returned minimal text — scan quality may be poor")
 
@@ -145,12 +149,19 @@ def _extract_mixed_pdf(file_path: str) -> ExtractionResult:
     except ImportError:
         raise ImportError("Run: pip install pdfplumber pdf2image pytesseract")
 
+    # Configure Tesseract path if provided in .env
+    tesseract_cmd = os.getenv("TESSERACT_CMD")
+    if tesseract_cmd:
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+
+    poppler_path = os.getenv("POPPLER_PATH")
+
     pages    = []
     warnings = []
     methods  = []
 
     # Pre-render all pages as images (needed for OCR fallback)
-    images = convert_from_path(file_path, dpi=300)
+    images = convert_from_path(file_path, dpi=300, poppler_path=poppler_path)
 
     with pdfplumber.open(file_path) as pdf:
         for i, page in enumerate(pdf.pages):

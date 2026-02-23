@@ -1,1 +1,11 @@
-C:\Users\ibrahim.fadhili\Downloads\Document Ingestion Pipeline\.venv
+.venv/
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+*.pdf
+*.txt
+!sample_proposal.txt
+!README.md
+.docker/
+docker-compose.override.yml
