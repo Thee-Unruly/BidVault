@@ -15,7 +15,7 @@ Usage:
     print(brief.evaluation_criteria)
 """
 
-from typing import List, Optional
+from typing import List, Optional, Any
 from pydantic import BaseModel, Field
 
 
@@ -23,11 +23,11 @@ from pydantic import BaseModel, Field
 
 class EvaluationCriterion(BaseModel):
     criterion: str   = Field(description="The name or description of the evaluation criterion")
-    weight: Optional[str] = Field(default=None, description="The weight/score (e.g., '60%', '30 points')")
+    weight: Optional[Any] = Field(default=None, description="The weight/score (e.g., '60%', '30 points')")
 
 class MandatoryDocument(BaseModel):
     document_name: str        = Field(description="The name of the required document")
-    description: Optional[str] = Field(default=None, description="Any specific format or details required")
+    description: Optional[Any] = Field(default=None, description="Any specific format or details required")
 
 
 # ── MAIN SCHEMA ───────────────────────────────────────────────────────────────
@@ -36,40 +36,40 @@ class RFPBrief(BaseModel):
     """Structured summary of an RFP, extracted by the Intake Agent."""
 
     # ── Identity ──────────────────────────────────────────────────────────────
-    project_name:      Optional[str] = Field(default="Unknown Project",      description="Name of the project or tender")
-    client:            Optional[str] = Field(default="Unknown Client",        description="Name of the issuing organisation")
-    reference_number:  Optional[str] = Field(default=None,                  description="Tender reference or bid number")
-    country:           Optional[str] = Field(default="Kenya",                 description="Country of the tender")
+    project_name:      Optional[Any] = Field(default="Unknown Project",      description="Name of the project or tender")
+    client:            Optional[Any] = Field(default="Unknown Client",        description="Name of the issuing organisation")
+    reference_number:  Optional[Any] = Field(default=None,                  description="Tender reference or bid number")
+    country:           Optional[Any] = Field(default="Kenya",                 description="Country of the tender")
 
     # ── Timelines ─────────────────────────────────────────────────────────────
-    deadline:          Optional[str] = Field(default=None, description="Final submission deadline")
-    enquiries_deadline: Optional[str] = Field(default=None, description="Deadline for submitting clarification questions (often earlier than submission deadline)")
+    deadline:          Optional[Any] = Field(default=None, description="Final submission deadline")
+    enquiries_deadline: Optional[Any] = Field(default=None, description="Deadline for submitting clarification questions")
 
     # ── Overview ──────────────────────────────────────────────────────────────
-    summary:           Optional[str] = Field(default="No summary available",  description="2-3 sentence overview of the project scope")
-    project_duration:  Optional[str] = Field(default=None,                  description="How long the project must take (e.g., '10 months')")
-    project_location:  Optional[str] = Field(default=None,                  description="Where work must be performed (on-site/remote/city)")
+    summary:           Optional[Any] = Field(default="No summary available",  description="2-3 sentence overview of the project scope")
+    project_duration:  Optional[Any] = Field(default=None,                  description="How long the project must take")
+    project_location:  Optional[Any] = Field(default=None,                  description="Where work must be performed")
 
     # ── Scope ─────────────────────────────────────────────────────────────────
-    scope_of_work:     List[str]    = Field(default_factory=list,            description="Key deliverables and activities in scope")
-    out_of_scope:      List[str]    = Field(default_factory=list,            description="Items explicitly excluded from scope")
+    scope_of_work:     List[Any]    = Field(default_factory=list,            description="Key deliverables")
+    out_of_scope:      List[Any]    = Field(default_factory=list,            description="Items explicitly excluded")
 
     # ── Evaluation ────────────────────────────────────────────────────────────
-    evaluation_criteria:  List[EvaluationCriterion] = Field(default_factory=list, description="How the bid will be scored (categories + weights)")
-    technical_threshold:  Optional[str]             = Field(default=None,         description="Minimum technical score to pass to financial evaluation")
+    evaluation_criteria:  List[EvaluationCriterion] = Field(default_factory=list, description="How the bid will be scored")
+    technical_threshold:  Optional[Any]             = Field(default=None,         description="Min tech score")
 
     # ── Eligibility ───────────────────────────────────────────────────────────
-    experience_requirements: List[str] = Field(default_factory=list, description="Minimum years of experience or domain expertise required to bid")
-    certifications_required: List[str] = Field(default_factory=list, description="Specific certifications required (e.g., PMP, SharePoint Admin, ISO)")
+    experience_requirements: List[Any] = Field(default_factory=list, description="Exp requirements")
+    certifications_required: List[Any] = Field(default_factory=list, description="Specific certs")
 
     # ── Administrative ────────────────────────────────────────────────────────
-    mandatory_documents: List[MandatoryDocument] = Field(default_factory=list, description="Documents that MUST be submitted with the bid")
-    submission_method:   Optional[str]           = Field(default=None,         description="How to submit (e.g., 'Physical Copy', 'Via Portal', 'Email')")
-    contact_person:      Optional[str]           = Field(default=None,         description="Point of contact for inquiries")
+    mandatory_documents: List[MandatoryDocument] = Field(default_factory=list, description="Docs that MUST be submitted")
+    submission_method:   Optional[Any]           = Field(default=None,         description="How to submit")
+    contact_person:      Optional[Any]           = Field(default=None,         description="Point of contact")
 
     # ── Commercial ────────────────────────────────────────────────────────────
-    currency:       Optional[str] = Field(default=None, description="Currency of the bid (e.g., 'NAD', 'USD', 'KES')")
-    preferencing:   Optional[str] = Field(default=None, description="Any local content or nationality preference policies (e.g., 'Namibian bidders preferred')")
+    currency:       Optional[Any] = Field(default=None, description="Currency (KES, USD, etc)")
+    preferencing:   Optional[Any] = Field(default=None, description="Local content policies")
 
 
 # ── AGENT ─────────────────────────────────────────────────────────────────────
@@ -174,15 +174,21 @@ class IntakeAgent:
         """Merges a new chunk's data into the master brief."""
         
         def update_field(current, incoming, default_vals=["Unknown Project", "Unknown Client", "No summary available", "Kenya", None]):
-            # If the incoming is a dict (LLM error), try to extract a string from it
-            if isinstance(incoming, dict):
-                # Try common keys if the LLM hallucinated a structure
-                for key in ["name", "value", "text", "submission", "description"]:
-                    if key in incoming and incoming[key]:
-                        incoming = str(incoming[key])
-                        break
-                if isinstance(incoming, dict):
-                    incoming = str(incoming) # Last resort
+            # If the incoming is a dict or list (LLM structure), serialize it to a clean string
+            if isinstance(incoming, (dict, list)):
+                import json
+                try:
+                    # If it's a simple dict with one key, just take the value
+                    if isinstance(incoming, dict) and len(incoming) == 1:
+                        incoming = list(incoming.values())[0]
+                    # If it's a dict like {'submission': '18 Feb', 'enquiries': None}, join them
+                    elif isinstance(incoming, dict):
+                        parts = [f"{k}: {v}" for k, v in incoming.items() if v]
+                        incoming = " | ".join(parts)
+                    else:
+                        incoming = str(incoming)
+                except:
+                    incoming = str(incoming)
 
             if incoming and incoming not in default_vals:
                 return incoming
