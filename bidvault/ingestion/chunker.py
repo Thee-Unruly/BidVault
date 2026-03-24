@@ -215,47 +215,4 @@ def _assign_indices(chunks: list[Chunk], method: str) -> list[Chunk]:
     return chunks
 
 
-# ── SECTION TYPE INFERENCE ────────────────────────────────────────────────────
-
-# Maps heading keywords → standardised section_type for metadata
-SECTION_TYPE_PATTERNS = {
-    "executive summary":    "executive_summary",
-    "technical approach":   "methodology",
-    "methodology":          "methodology",
-    "approach":             "methodology",
-    "work plan":            "work_plan",
-    "workplan":             "work_plan",
-    "team":                 "team",
-    "personnel":            "team",
-    "key experts":          "team",
-    "qualifications":       "team",
-    "past experience":      "past_experience",
-    "previous experience":  "past_experience",
-    "similar assignments":  "past_experience",
-    "firm profile":         "company_profile",
-    "company profile":      "company_profile",
-    "about us":             "company_profile",
-    "financial":            "financial",
-    "budget":               "financial",
-    "cost":                 "financial",
-    "eligibility":          "requirements",
-    "mandatory":            "requirements",
-    "evaluation criteria":  "requirements",
-    "terms of reference":   "scope",
-    "scope of work":        "scope",
-    "background":           "background",
-    "introduction":         "background",
-    "context":              "background",
-}
-
-
-def infer_section_type(section_hint: str) -> str:
-    """
-    Given a section heading, return a standardised section_type.
-    Falls back to 'general' if no match found.
-    """
-    hint_lower = section_hint.lower()
-    for pattern, section_type in SECTION_TYPE_PATTERNS.items():
-        if pattern in hint_lower:
-            return section_type
-    return "general"
+# Section type inference is now handled by DomainAnalyzers in the pipeline.
