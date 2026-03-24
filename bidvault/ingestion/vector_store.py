@@ -155,12 +155,12 @@ class VectorStore:
                 text,
                 embedding,      # psycopg2 serialises list → pgvector format
                 json.dumps(meta_dict),
-                metadata.source_type,
-                metadata.sector,
-                metadata.donor,
-                metadata.section_type,
-                metadata.year or None,
-                metadata.won,
+                metadata.get("source_type", "other"),
+                metadata.get("sector", "general"),
+                metadata.get("donor", "other"),
+                metadata.get("section_type", "general"),
+                metadata.get("year") or None,
+                metadata.get("won"),
             ))
         conn.commit()
         return chunk_id
@@ -186,12 +186,12 @@ class VectorStore:
                 text,
                 embedding,
                 json.dumps(meta_dict),
-                metadata.source_type,
-                metadata.sector,
-                metadata.donor,
-                metadata.section_type,
-                metadata.year or None,
-                metadata.won,
+                metadata.get("source_type", "other"),
+                metadata.get("sector", "general"),
+                metadata.get("donor", "other"),
+                metadata.get("section_type", "general"),
+                metadata.get("year") or None,
+                metadata.get("won"),
             ))
 
         with conn.cursor() as cur:

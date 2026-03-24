@@ -44,10 +44,17 @@ from typing import Optional
 
 from .detector    import detect
 from .extractor   import extract
-from .chunker     import chunk, infer_section_type
-from .metadata    import DocumentMetadata, enrich_metadata
+from .chunker     import chunk
+from .metadata    import DocumentMetadata, DocumentAnalyzer
 from .embedder    import Embedder
 from .vector_store import VectorStore
+
+# Import the default analyzer to preserve the bidding flow
+try:
+    from bidvault.domains.bids.analyzer import BidAnalyzer
+except ImportError:
+    # Fallback if the domain module isn't reachable
+    class BidAnalyzer(DocumentAnalyzer): pass
 
 
 # ── REQUEST / RESULT SCHEMA ───────────────────────────────────────────────────
@@ -58,23 +65,27 @@ class IngestionRequest:
 
     file_path:      str                         # local path to the file
 
-    # Document classification — set what you know, pipeline infers the rest
-    source_type:    str     = "other"           # proposal | rfp | cv | project | etc.
-    sector:         str     = ""               # auto-tagged if empty
-    donor:          str     = ""               # auto-tagged if empty
-    year:           int     = 0                 # defaults to current year if 0
-
-    # Provenance
+    # Core classification
     document_id:    str     = ""               # UUID from your PostgreSQL documents table
+    source_type:    str     = "other"
+
+    # Domain-specific fields (stored in metadata.extra)
+    # Keeping these here to avoid breaking existing API calls
+    sector:         str     = ""
+    donor:          str     = ""
+    year:           int     = 0
     client:         str     = ""
     country:        str     = "Kenya"
-    won:            Optional[bool] = None       # True / False / None(unknown)
+    won:            Optional[bool] = None
     tender_value_usd: Optional[float] = None
     bid_reference:  str     = ""
 
     # SharePoint (if sourced from there)
     sharepoint_item_id: str = ""
     sharepoint_url:     str = ""
+
+    # Any other custom metadata
+    extra:          dict    = field(default_factory=dict)
 
 
 @dataclass
@@ -95,24 +106,28 @@ class IngestionPipeline:
 
     def __init__(
         self,
+        analyzer:       Optional[DocumentAnalyzer] = None,
         embedder:       Optional[Embedder]      = None,
         vector_store:   Optional[VectorStore]   = None,
-        dry_run:        bool = False,   # if True, skips storing — useful for testing
+        dry_run:        bool = False,
     ):
-        self.embedder     = embedder     or Embedder()
+        # Default to BidAnalyzer to preserve the "bidding flow"
+        self.analyzer     = analyzer or BidAnalyzer()
+        self.embedder     = embedder or Embedder()
         self.vector_store = vector_store or VectorStore()
         self.dry_run      = dry_run
 
     def ingest(self, request: IngestionRequest) -> IngestionResult:
         """
-        Full pipeline: detect → extract → chunk → embed → store.
-        Returns a result object with counts and any warnings.
+        Full pipeline: detect → extract → chunk → (analyze) → embed → store.
         """
         start_time = time.time()
 
         try:
             return self._run(request, start_time)
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return IngestionResult(
                 success          = False,
                 error            = str(e),
@@ -159,27 +174,37 @@ class IngestionPipeline:
             )
 
         # ── STEP 4: BUILD METADATA ────────────────────────────────────────────
-        print(f"[4/5] Building metadata...")
-        
+        print(f"[4/5] Building metadata & analyzing...")
+
+        # 1. Create base metadata
         base_metadata = DocumentMetadata(
-            source_type          = request.source_type,
-            sector               = request.sector,
-            donor                = request.donor,
-            year                 = request.year, # Pass 0 if unknown to allow auto-extraction
             document_id          = request.document_id,
             file_name            = os.path.basename(request.file_path),
-            client               = request.client,
-            country              = request.country,
-            won                  = request.won,
-            tender_value_usd     = request.tender_value_usd,
-            bid_reference        = request.bid_reference,
-            sharepoint_item_id   = request.sharepoint_item_id,
-            sharepoint_url       = request.sharepoint_url,
         )
 
-        # Auto-fill missing sector/donor from the document text
-        base_metadata = enrich_metadata(base_metadata, extraction.text[:5000])
-        print(f"      → sector={base_metadata.sector}, donor={base_metadata.donor}")
+        # 2. Package initial domain fields into 'extra'
+        initial_extra = {
+            "source_type":      request.source_type,
+            "sector":           request.sector,
+            "donor":            request.donor,
+            "year":             request.year,
+            "client":           request.client,
+            "country":          request.country,
+            "won":              request.won,
+            "tender_value_usd": request.tender_value_usd,
+            "bid_reference":    request.bid_reference,
+            "sharepoint_item_id": request.sharepoint_item_id,
+            "sharepoint_url":    request.sharepoint_url,
+        }
+        initial_extra.update(request.extra)
+        base_metadata.extra = initial_extra
+
+        # 3. Call domain analyzer for enrichment (auto-tagging etc)
+        # We pass the first 5000 chars for analysis
+        enriched_extra = self.analyzer.analyze(extraction.text[:5000], base_metadata.extra)
+        base_metadata.extra.update(enriched_extra)
+        
+        print(f"      → Analysis complete (extra fields: {list(base_metadata.extra.keys())})")
 
         # ── STEP 5: EMBED + STORE ─────────────────────────────────────────────
         print(f"[5/5] Embedding {len(chunks)} chunks...")
@@ -201,13 +226,17 @@ class IngestionPipeline:
         chunk_metadatas = []
 
         for c in chunks:
+            # Shallow copy base metadata for this chunk
             meta = DocumentMetadata(
-                **{k: v for k, v in base_metadata.__dict__.items()},
+                document_id  = base_metadata.document_id,
+                file_name    = base_metadata.file_name,
+                extra        = base_metadata.extra.copy()
             )
             meta.chunk_index    = c.index
             meta.chunk_method   = c.chunk_method
             meta.section_hint   = c.section_hint
-            meta.section_type   = infer_section_type(c.section_hint)
+            # Use analyzer to infer section type from hint
+            meta.section_type   = self.analyzer.infer_section_type(c.section_hint)
             chunk_metadatas.append(meta)
 
         # Embed all chunks in one batched call
@@ -220,8 +249,6 @@ class IngestionPipeline:
         print(f"      → {stored} chunks stored in vector DB")
 
         duration = time.time() - start_time
-        print(f"\n✓ Ingestion complete in {duration:.1f}s")
-
         return IngestionResult(
             success           = True,
             chunks_stored     = stored,

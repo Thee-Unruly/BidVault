@@ -185,13 +185,13 @@ async def search_documents(request: SearchRequest):
             id            = c.id,
             text          = c.text,
             similarity    = c.similarity,
-            source_type   = c.metadata.source_type,
-            sector        = c.metadata.sector,
-            section_type  = c.metadata.section_type,
-            year          = c.metadata.year or 0,
-            won           = c.metadata.won,
-            client        = c.metadata.client,
-            sharepoint_url= c.metadata.sharepoint_url,
+            source_type   = c.metadata.get("source_type", "other"),
+            sector        = c.metadata.get("sector", "general"),
+            section_type  = c.metadata.get("section_type", "general"),
+            year          = c.metadata.get("year", 0),
+            won           = c.metadata.get("won"),
+            client        = c.metadata.get("client", ""),
+            sharepoint_url= c.metadata.get("sharepoint_url", ""),
         )
         for c in chunks
     ]

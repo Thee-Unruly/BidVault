@@ -30,6 +30,17 @@ class DocumentMetadata:
     # For any domain-specific data (e.g. bid-specific, legal-specific)
     extra: Dict[str, Any] = field(default_factory=dict)
 
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Convenience: check core fields first, then 'extra' dictionary.
+        Enables backward compatibility with code that expects metadata.donor etc.
+        """
+        if hasattr(self, key) and key != "extra":
+            val = getattr(self, key)
+            if val is not None and val != "":
+                return val
+        return self.extra.get(key, default)
+
     def validate(self):
         """Basic universal validation. Domain validation happens in analyzers."""
         if not self.document_id:
