@@ -228,3 +228,39 @@ class IntakeAgent:
                 master.mandatory_documents.append(d)
 
         return master
+
+    def custom_extract(self, text: str, fields: List[str], custom_prompt: Optional[str] = None) -> dict:
+        """
+        Extracts custom fields from any document text.
+        This is the generalized version of extract_brief.
+        """
+        # Cleanup
+        text = "".join(char for char in text if char.isprintable() or char in "\n\r\t")
+        
+        # Take first 30k chars for custom extraction (simpler than full batching for now)
+        sample_text = text[:30000]
+        
+        system_prompt = (
+            "You are an expert Document Analyst. Extract a structured JSON object from the provided text.\n\n"
+            f"FIELDS TO EXTRACT: {', '.join(fields)}\n\n"
+        )
+        if custom_prompt:
+            system_prompt += f"ADDITIONAL INSTRUCTIONS: {custom_prompt}\n\n"
+            
+        system_prompt += "Return ONLY a JSON object. If a field is not found, return null."
+
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user",   "content": f"Analyze this text:\n\n{sample_text}"}
+                ],
+                model=self.model,
+                response_format={"type": "json_object"},
+                temperature=0.1,
+            )
+            import json
+            return json.loads(chat_completion.choices[0].message.content)
+        except Exception as e:
+            print(f"Error in custom extraction: {e}")
+            return {"error": str(e)}

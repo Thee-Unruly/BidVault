@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from bidvault.api.ingest import router as ingest_router
 from bidvault.api.intake import router as intake_router
 import uvicorn
@@ -8,8 +9,17 @@ load_dotenv()
 
 app = FastAPI(
     title="BidVault Ingestion Pipeline",
-    description="API for ingesting and searching bid documents",
-    version="1.0.0"
+    description="API for ingesting and searching documents",
+    version="1.1.0"
+)
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include the ingestion router

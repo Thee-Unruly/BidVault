@@ -115,3 +115,39 @@ async def analyze_rfp(file: UploadFile = File(...)):
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+@router.post("/extract-custom")
+async def extract_custom_fields(
+    file: UploadFile = File(...),
+    fields: str = "title, date, summary",
+    custom_prompt: Optional[str] = None
+):
+    """
+    Generalized extraction: upload any document and specify what you want to extract.
+    """
+    allowed_extensions = {".pdf", ".docx", ".doc", ".txt"}
+    file_ext = os.path.splitext(file.filename or "")[1].lower()
+
+    if file_ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_ext}")
+
+    field_list = [f.strip() for f in fields.split(",") if f.strip()]
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = tmp.name
+
+        detection  = detect(tmp_path)
+        extraction = extract(tmp_path, detection)
+
+        agent = IntakeAgent()
+        data  = agent.custom_extract(extraction.text, field_list, custom_prompt)
+        
+        return {"filename": file.filename, "extracted": data}
+
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)

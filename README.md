@@ -3,12 +3,25 @@
 A **generalized, AI-powered document ingestion pipeline** that can be adapted to any domain.
 Originally built for [BidVault](https://github.com/Thee-Unruly/BidVault) (proposal automation), it is now a reusable engine for ingesting, embedding, and semantically searching any document type.
 
-## Architecture
+## Running the Application
 
-The pipeline separates the **core ingestion engine** from **domain-specific logic** using a plugin pattern.
-
+### 1. Backend (FastAPI)
+```bash
+python main.py
 ```
-.
+*   API is available at: http://localhost:8000
+*   Swagger documentation: http://localhost:8000/docs
+
+### 2. Frontend (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*   UI is available at: http://localhost:5173
+*   *(Ensure the backend is running for the UI to connect)*
+
+## Project Structure
 ├── bidvault/
 │   ├── ingestion/           # Core Engine (domain-agnostic)
 │   │   ├── pipeline.py      # Orchestrator: Detect → Extract → Chunk → Analyze → Embed → Store
